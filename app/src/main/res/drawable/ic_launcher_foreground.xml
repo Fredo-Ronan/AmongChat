@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Chat bubble shape -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,30c0,-6.6 5.4,-12 12,-12h44c6.6,0 12,5.4 12,12v28c0,6.6 -5.4,12 -12,12h-30l-10,10v-10h-4c-6.6,0 -12,-5.4 -12,-12z"/>
+
+    <!-- Bluetooth symbol -->
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M54,28v20l12,-10 -12,-10zm0,20v20l12,-10 -12,-10zM54,28l-10,10 10,10M54,48l-10,10 10,10"/>
+</vector>
