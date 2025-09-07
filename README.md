@@ -1,4 +1,15 @@
 # AmongChat
+
+<p align="center">
+  <img width="246" height="246" alt="ic_launcher-web" src="https://github.com/user-attachments/assets/c5d481ad-0eeb-449d-8705-b92d45321a55" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/Fredo-Ronan/AmongChat/actions/workflows/amongchat-ci.yml/badge.svg"/>
+  <img src="https://img.shields.io/github/contributors/fredo-ronan/AmongChat"/>
+  <img src="https://img.shields.io/github/last-commit/fredo-ronan/AmongChat"/>
+</p>
+
 An experimental live chat android app that rely only on bluetooth connection without internet required (works offline) that planned to have a bluetooth mesh mechanism using BLE (Bluetooth Low Energy)
 
 ## What are the features planned?
