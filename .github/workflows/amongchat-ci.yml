@@ -41,7 +41,7 @@ jobs:
 
             # Upload Debug APK as artifact that can be downloaded
             - name: Upload Debug APK
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                 name: AmongChat-Debug-APK-${{ github.sha }}
                 path: app/build/outputs/apk/debug/app-debug.apk
