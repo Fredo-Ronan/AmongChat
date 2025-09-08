@@ -77,6 +77,7 @@ class BluetoothChatService(
         // Send to all connected client (if we are the server)
         serverThread?.broadcast(payload)
         // Also send to the server/peers if we're a client
+        Log.i(TAG, "$clientThreads")
         clientThreads.forEach { it.send(payload) }
     }
 
@@ -104,7 +105,7 @@ class BluetoothChatService(
             while (!isInterrupted) {
                 try {
                     val sock = serverSocket?.accept() ?: break
-                    val conn = ClientConn(sock) {
+                    val conn = ClientConn(sock, onClosed = {
                         connections.remove(it)
                         val name = sock.remoteDevice.name ?: sock.remoteDevice.address
                         mainHandler.post {
@@ -114,6 +115,12 @@ class BluetoothChatService(
                                 Toast.makeText(context, "Disconnected from $name", Toast.LENGTH_SHORT).show()
                             }
                         }
+                    }) { from, msg ->
+                        // Forward incoming messages to UnifiedChatService
+                        onMessage(from, msg)
+                        Log.i(TAG, "server receive new message from: $from - ${sock.remoteDevice.name}")
+                        // ✅ Re-broadcast to other clients
+                        broadcastToOthers(msg, exclude = sock.remoteDevice.address)
                     }
                     connections.add(conn)
                     conn.start()
@@ -124,7 +131,19 @@ class BluetoothChatService(
             }
         }
 
-        fun broadcast(bytes: ByteArray) { connections.forEach { it.send(bytes) } }
+        fun broadcastToOthers(message: String, exclude: String) {
+            val payload = (message + "\n").toByteArray(Charsets.UTF_8)
+            connections.forEach { conn ->
+                if (conn.socket.remoteDevice.address != exclude) {
+                    conn.send(payload)
+                }
+            }
+        }
+
+        fun broadcast(bytes: ByteArray) {
+            Log.i(TAG, "$connections")
+            connections.forEach { it.send(bytes) }
+        }
 
         fun cancel() {
             try {
@@ -139,8 +158,9 @@ class BluetoothChatService(
     // A bidirectional connection wrapper used by both server-accepted sockets and client sockets
     @SuppressLint("MissingPermission")
     private inner class ClientConn(
-        private val socket: BluetoothSocket,
-        private val onClosed: (ClientConn) -> Unit = {}
+        val socket: BluetoothSocket,
+        private val onClosed: (ClientConn) -> Unit = {},
+        private val onMessageReceived: (from: String, text: String) -> Unit = { _, _ -> }
     ) : Thread("bt-classic-conn-${socket.remoteDevice.address}") {
         private val input: InputStream = socket.inputStream
         private val output: OutputStream = socket.outputStream
@@ -153,7 +173,11 @@ class BluetoothChatService(
                     val n = input.read(buf)
                     if (n == -1) break
                     val text = String(buf, 0, n, Charsets.UTF_8).trim()
-                    if (text.isNotEmpty()) onMessage(socket.remoteDevice.name ?: socket.remoteDevice.address, text)
+                    if (text.isNotEmpty()) {
+                        val from = socket.remoteDevice.name ?: socket.remoteDevice.address
+                        onMessage(from, text)
+                        onMessageReceived(from, text)
+                    }
                 } catch (e: IOException) { break }
             }
             cancel()
