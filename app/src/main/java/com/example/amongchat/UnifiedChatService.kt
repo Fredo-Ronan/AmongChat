@@ -29,10 +29,10 @@ import kotlin.collections.ArrayList
  */
 class UnifiedChatService(
     private val context: Context,
-    private val adapter: BluetoothAdapter,
-    private val nickname: String = "User-%04d".format((Math.random() * 9999).toInt()) // simple nickname
+    private val adapter: BluetoothAdapter
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var nickname: String = "Unknown"
 
     // Underlying transport services
     private val classic = BluetoothChatService(context, adapter) { from, text ->
@@ -67,6 +67,12 @@ class UnifiedChatService(
     private val REBROADCAST_MAX_JITTER = 200L
 
     // ----- Public API -----
+
+    fun setLocalUsername(name: String) {
+        nickname = name
+    }
+
+    fun getLocalUsername(): String = nickname
 
     fun startBleMesh() {
         isMeshRunning.value = true
@@ -125,7 +131,7 @@ class UnifiedChatService(
 
         // Send on Classic immediately (best-effort)
         try {
-            classic.broadcast(text)
+            classic.broadcastMessage(nickname, text)
         } catch (e: Exception) { Log.w(TAG, "classic send failed", e) }
 
         // Also flood via BLE mesh (allow other non-classic peers to receive)
@@ -196,7 +202,7 @@ class UnifiedChatService(
 
             // Rebroadcast to Classic if TTL > 0
             if (packet.ttl > 0) {
-                rebroadcastToClassic(text)
+                rebroadcastToClassic(nickname, text)
                 // Also rebroadcast further on BLE through ble service; the BleMeshService already
                 // re-broadcasts fragments with decremented TTL when scanning, so no need to call sendText here.
             }
@@ -204,12 +210,12 @@ class UnifiedChatService(
     }
 
     // Send text to Classic peers (server will push to connected clients)
-    private fun rebroadcastToClassic(text: String) {
+    private fun rebroadcastToClassic(nickname: String, text: String) {
         scope.launch {
             try {
                 // small jitter
                 delay(randomJitter())
-                classic.broadcast(text)
+                classic.broadcastMessage(nickname, text)
             } catch (e: Exception) { Log.w(TAG, "rebroadcast classic fail", e) }
         }
     }

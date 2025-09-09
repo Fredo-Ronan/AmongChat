@@ -2,6 +2,7 @@ package com.example.amongchat
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.content.BroadcastReceiver
@@ -135,6 +136,22 @@ class MainActivity : ComponentActivity() {
         requestBtPermissions()
 
         setContent {
+            val activity = (LocalContext.current as? Activity)
+            var username by remember { mutableStateOf("") }
+            var showNameDialog by remember { mutableStateOf(true) }
+
+            if (showNameDialog){
+                NamePromptDialog(onConfirm = { entered ->
+                    username = entered
+                    showNameDialog = false
+                    chatService.setLocalUsername(username)
+                }, onDismiss = {
+                    // Close the app or other action
+                    showNameDialog = false
+                    activity?.finish()
+                })
+            }
+
             ChatScreen(
                 bluetoothAdapter,
                 chatService = chatService,
@@ -488,6 +505,44 @@ fun ChatScreen(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NamePromptDialog(
+    initialName: String = "",
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text(text = "Enter Your Name") },
+        text = {
+            Column {
+                TextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) onConfirm(name.trim())
+                }
+            ) { Text("OK") }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = { onDismiss() }) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 
 @SuppressLint("MissingPermission", "DiscouragedPrivateApi")
 fun forceCancelDiscoverable(bluetoothAdapter: BluetoothAdapter): Boolean {
